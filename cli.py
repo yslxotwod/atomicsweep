@@ -836,13 +836,20 @@ def cmd_selftest(_a):
     chk("bucket-resumed-sends", b.sent, before + 1)
 
     from core import geo as _geo
-    cov = _geo.population_coverage("enterprise")
-    chk("coverage-has-asns", bool(cov and cov["asns"] > 0), True)
+    _geo.POPULATIONS["selftest-cov"] = {
+        "kind": "attributed", "source": "selftest_no_such_cache.json",
+        "asns": [64500, 64501], "desc": "synthetic",
+    }
+    cov = _geo.population_coverage("selftest-cov")
+    chk("coverage-has-asns", bool(cov and cov["asns"] == 2), True)
     chk("coverage-shape", set(cov or {}), {"asns", "resolved", "share"})
+    chk("coverage-unresolved-is-zero", cov and cov["share"], 0.0)
+    _geo.POPULATIONS.pop("selftest-cov", None)
     chk("coverage-flat-is-none", _geo.population_coverage("cellular-flat"), None)
     missing = [k.id for k in SWEEP_CLASSES
                if getattr(k, "population", None) not in _geo.POPULATIONS]
     chk("every-class-population-exists", missing, [])
+    chk("popdb-names-declared", all(n in _geo.POPULATIONS for n in _geo.POPDB_LABELS), True)
 
     chk("rescan-zero-is-miss", "consistent with a real miss" in rescan_note(0, 100), True)
     chk("rescan-small-is-pacing", "may have been paced too fast" in rescan_note(1, 100), True)

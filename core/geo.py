@@ -315,11 +315,29 @@ POPDB_LABELS = {
 }
 
 def popdb_populations():
-    """{name: spec} from popdb.json, in a stable order."""
+    """{name: spec} for every population the PeeringDB dump can fill.
+
+    The names are DECLARED even when `popdb.json` has not been built yet. A class
+    that names a population no longer fails to resolve on a fresh clone, and the
+    empty ASN list makes the bench print "unfetched, not empty" instead of a zero
+    that reads like a result. Building the database is one command
+    (`tools/build_popdb.py`); the absence of that command having been run is not
+    the same fact as an operator having no addresses.
+    """
     d = _load_json(POPDB) or {}
     pops = d.get("populations") or {}
     out = {}
+    for name, label in POPDB_LABELS.items():
+        spec = pops.get(name) or {}
+        out[name] = {
+            "kind": "attributed", "source": "popdb_pfx.json",
+            "asns": spec.get("asns") or [],
+            "desc": label,
+            "sub": spec.get("desc", ""),
+        }
     for name, spec in pops.items():
+        if name in out:
+            continue
         out[name] = {
             "kind": "attributed", "source": "popdb_pfx.json",
             "asns": spec.get("asns") or [],
