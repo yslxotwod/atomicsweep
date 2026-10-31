@@ -1,0 +1,12 @@
+# Runs are output, not source: they are large, they are machine-specific, and
+# they contain target data. Keep them out of the repo.
+data/runs/
+data/*.out
+data/*.log
+data/*.sh
+data/popdb_fetch*.log
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/

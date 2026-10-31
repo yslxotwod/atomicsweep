@@ -1,0 +1,47 @@
+name: selftest
+
+# The selftest is offline on purpose: every assertion runs against fixtures and
+# hand-built tables, never a socket. That is what makes it safe to run on a
+# shared runner, and it is why a green run here means "the matchers and the wire
+# encoders are internally consistent", not "the toolkit works" — the controls
+# that prove a matcher can see a real device are `--gate`, which transmits.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # No `pip install` step: the sweeps are stdlib only. If this ever needs a
+      # dependency, that is a deliberate change and should be visible here.
+      - name: selftest
+        run: python3 cli.py --selftest
+
+      - name: class registry is complete
+        run: python3 cli.py --list
+
+      - name: every class declares a population that exists
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, ".")
+          from core import geo
+          from core.classes import SWEEP_CLASSES
+          bad = [(k.id, k.population) for k in SWEEP_CLASSES
+                 if getattr(k, "population", None) and k.population not in geo.POPULATIONS]
+          if bad:
+              sys.exit(f"classes naming an unknown population: {bad}")
+          print(f"{len(SWEEP_CLASSES)} classes, all populations resolve")
+          PY

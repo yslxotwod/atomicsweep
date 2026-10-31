@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# atomicsweep — bulk sweeps for specific operator device classes, with a bench.
+#
+#   atomicsweep                     the interface
+#   atomicsweep --list              the classes, one per line
+#   atomicsweep --gate [class]      run the positive controls
+#   atomicsweep --dry-run <class>   count the probes, transmit nothing
+#   atomicsweep --run <class>       launch (see --population/--country/...)
+#   atomicsweep --runs              past runs and their counters
+#   atomicsweep --selftest          offline assertions
+#
+# Everything the interface does is reachable from a flag, so it can run over ssh
+# in a for-loop and still be the same code path.
+set -uo pipefail
+DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd) || exit 1
+
+if [ "$#" -eq 0 ]; then
+    # no arguments means the bench; a terminal is required for curses
+    if [ ! -t 0 ] || [ ! -t 1 ]; then
+        echo "atomicsweep: no terminal — use --list, --gate, --dry-run or --run" >&2
+        exit 2
+    fi
+    exec python3 "$DIR/tui.py"
+fi
+
+case "${1:-}" in
+    -h|--help)
+        # print the header comment only — a fixed line range leaks the first
+        # non-comment line of the script into the help text
+        awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 && !/^#/ {exit}' \
+            "${BASH_SOURCE[0]}"
+        exit 0 ;;
+    --version) echo "atomicsweep $(cat "$DIR/VERSION" 2>/dev/null || echo dev)"; exit 0 ;;
+esac
+
+exec python3 "$DIR/cli.py" "$@"

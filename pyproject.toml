@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atomicsweep"
+version = "1.0.0"
+description = "Device-class sweeps over operator infrastructure, with the negative case treated as a claim that needs evidence"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "atomicsweep contributors" }]
+keywords = ["network", "fingerprint", "sweep", "recon", "tui", "telecom"]
+classifiers = [
+    "Environment :: Console :: Curses",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Topic :: System :: Networking :: Monitoring",
+]
+# The sweeps themselves are stdlib only. `pyte` is NOT a runtime dependency: it
+# is used by tools/tui_shot.py, which renders the panel headlessly for
+# screenshots. Keeping it out of `dependencies` means `pip install .` works on a
+# bare box, which is the environment this tool is meant to run in.
+dependencies = []
+
+[project.optional-dependencies]
+shots = ["pyte>=0.8"]
+
+[project.scripts]
+atomicsweep = "cli:main"
+
+[tool.setuptools]
+py-modules = ["cli", "tui"]
+
+[tool.setuptools.packages.find]
+include = ["core*", "classes*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# The sweep classes are written as flat literal tables on purpose: a vendor name
+# next to its keyword list is meant to be read and edited by eye, so long lines
+# and a module-level list of tuples are the format, not an accident.
+ignore = ["E501"]
